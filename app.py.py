@@ -11,15 +11,25 @@ st.title("🎰 キクヤ堺本店 データ取得ツール")
 st.write("みんレポから最新の差枚数・回転数データを自動収集します。")
 
 BASE_URL = "https://min-repo.com"
-TARGET_LIST_URL = "https://min-repo.com/tag/%e3%82%ad%e3%82%af%e3%83%83%e3%82%b5%e5%a0%ba%e6%9c%ac%e5%ba%97/"
-HEADERS = {"User-Agent": "Mozilla/5.0"}
+# URLを正しい日本語タグURLに修正
+TARGET_LIST_URL = "https://min-repo.com/tag/キクヤ堺本店/"
+
+# ブロック回避のための標準的なUser-Agentヘッダー
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,"
+        " like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    )
+}
 
 
 def get_soup(url):
   try:
     res = requests.get(url, headers=HEADERS, timeout=10)
     res.encoding = res.apparent_encoding
-    return BeautifulSoup(res.text, "html.parser")
+    if res.status_code == 200:
+      return BeautifulSoup(res.text, "html.parser")
+    return None
   except:
     return None
 
@@ -45,7 +55,9 @@ if st.button("🚀 データ取得を開始する"):
   total = len(report_links)
 
   if total == 0:
-    st.error("データが見つかりませんでした。")
+    st.error(
+        "データが見つかりませんでした。サイト側のURL構成か構造が変更されている可能性があります。"
+    )
   else:
     all_data = []
 
@@ -74,11 +86,9 @@ if st.button("🚀 データ取得を開始する"):
     status_text.success("データの取得が完了しました！")
     df = pd.DataFrame(all_data)
 
-    # スマホ画面上にテーブルを表示
     st.subheader("📊 取得データ一覧")
     st.dataframe(df)
 
-    # CSVダウンロードボタン
     csv_data = df.to_csv(index=False).encode("utf-8-sig")
     st.download_button(
         label="📥 CSVファイルをダウンロード",
